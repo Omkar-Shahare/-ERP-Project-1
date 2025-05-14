@@ -8,9 +8,28 @@ interface NotificationsDropdownProps {
 }
 
 const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({ onClose }) => {
-  const { notifications, markNotificationAsRead, clearNotifications } = useAppContext();
+  const { notifications, products, markNotificationAsRead, clearNotifications } = useAppContext();
 
-  // Icon mapping based on notification type
+  // Get low stock notifications
+  const lowStockNotifications = products
+    .filter(p => p.quantity <= p.threshold)
+    .map(product => ({
+      id: `stock_${product.id}`,
+      title: 'Low Stock Alert',
+      message: `${product.name} is running low on stock (${product.quantity} remaining)`,
+      type: product.quantity === 0 ? 'error' : 'warning',
+      read: false,
+      date: new Date(),
+    }));
+
+  // Combine all notifications
+  const allNotifications = [...lowStockNotifications, ...notifications];
+
+  // Sort notifications by date
+  const sortedNotifications = allNotifications.sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'success':
@@ -25,12 +44,12 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({ onClose }
     }
   };
 
-  // Handle clicking on a notification
   const handleNotificationClick = (id: string) => {
-    markNotificationAsRead(id);
+    if (!id.startsWith('stock_')) {
+      markNotificationAsRead(id);
+    }
   };
 
-  // Clear all notifications
   const handleClearAll = () => {
     clearNotifications();
     onClose();
@@ -43,9 +62,9 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({ onClose }
           <div className="flex items-center">
             <Bell size={16} className="mr-2" />
             <span className="font-medium">Notifications</span>
-            {notifications.length > 0 && (
+            {sortedNotifications.length > 0 && (
               <span className="ml-2 text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">
-                {notifications.length}
+                {sortedNotifications.length}
               </span>
             )}
           </div>
@@ -58,12 +77,12 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({ onClose }
         </div>
 
         <div className="max-h-80 overflow-y-auto">
-          {notifications.length === 0 ? (
+          {sortedNotifications.length === 0 ? (
             <div className="px-4 py-6 text-center text-gray-500">
               <p>No notifications</p>
             </div>
           ) : (
-            notifications.map((notification) => (
+            sortedNotifications.map((notification) => (
               <div
                 key={notification.id}
                 className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
@@ -86,7 +105,7 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({ onClose }
                       {formatDateTime(notification.date)}
                     </p>
                   </div>
-                  {!notification.read && (
+                  {!notification.read && !notification.id.startsWith('stock_') && (
                     <div className="ml-3 flex-shrink-0">
                       <div className="w-2 h-2 rounded-full bg-blue-600"></div>
                     </div>

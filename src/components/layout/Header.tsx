@@ -16,14 +16,17 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import NotificationsDropdown from '../notifications/NotificationsDropdown';
 
 const Header: React.FC = () => {
-  const { notifications, currentUser, logout } = useAppContext();
+  const { products, notifications, currentUser, logout } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation();
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Calculate notifications including low stock items
+  const lowStockItems = products.filter(p => p.quantity <= p.threshold);
+  const unreadCount = notifications.filter(n => !n.read).length + lowStockItems.length;
+  
   const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = () => {
@@ -69,7 +72,6 @@ const Header: React.FC = () => {
     item => !item.adminOnly || currentUser?.role === 'admin'
   );
   
-  // Get page title
   const getPageTitle = () => {
     const currentItem = menuItems.find(item => item.path === location.pathname);
     return currentItem ? currentItem.label : 'ERP System';
@@ -79,7 +81,6 @@ const Header: React.FC = () => {
     <header className="bg-white shadow-sm">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left side - Mobile menu button and logo */}
           <div className="flex items-center">
             <button
               type="button"
@@ -94,9 +95,7 @@ const Header: React.FC = () => {
             </h1>
           </div>
           
-          {/* Right side - Notifications and profile */}
           <div className="flex items-center">
-            {/* Notifications */}
             <div className="relative ml-3">
               <button
                 className="p-1 rounded-full text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -118,7 +117,6 @@ const Header: React.FC = () => {
               )}
             </div>
             
-            {/* Profile dropdown */}
             <div className="relative ml-4">
               <div className="flex items-center">
                 {currentUser && (
@@ -139,7 +137,6 @@ const Header: React.FC = () => {
         </div>
       </div>
       
-      {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-40 bg-black bg-opacity-25" onClick={() => setMobileMenuOpen(false)}>
           <div className="fixed inset-y-0 left-0 z-40 w-64 bg-blue-900 text-white" onClick={e => e.stopPropagation()}>

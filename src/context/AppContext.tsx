@@ -21,6 +21,7 @@ interface AppContextType {
   // User methods
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  updateUser: (user: User) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -40,7 +41,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const storedNotifications = localStorage.getItem('erp_notifications');
       const storedUser = localStorage.getItem('erp_currentUser');
 
-      // Load products or use mock data
       if (storedProducts) {
         setProducts(JSON.parse(storedProducts));
       } else {
@@ -48,7 +48,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('erp_products', JSON.stringify(mockData.products));
       }
 
-      // Load sales or use mock data
       if (storedSales) {
         setSales(JSON.parse(storedSales));
       } else {
@@ -56,7 +55,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('erp_sales', JSON.stringify(mockData.sales));
       }
 
-      // Load notifications or use mock data
       if (storedNotifications) {
         setNotifications(JSON.parse(storedNotifications));
       } else {
@@ -64,12 +62,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('erp_notifications', JSON.stringify(mockData.notifications));
       }
 
-      // Load user if exists
       if (storedUser) {
         setCurrentUser(JSON.parse(storedUser));
-      } else {
-        setCurrentUser(mockData.currentUser);
-        localStorage.setItem('erp_currentUser', JSON.stringify(mockData.currentUser));
       }
     };
 
@@ -95,7 +89,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [currentUser]);
 
-  // Product management methods
   const addProduct = (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newProduct: Product = {
       ...productData,
@@ -119,9 +112,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProducts(products.filter((product) => product.id !== id));
   };
 
-  // Sale management methods
   const addSale = (saleData: Omit<Sale, 'id' | 'date'>) => {
-    // Create new sale
     const newSale: Sale = {
       ...saleData,
       id: generateId(),
@@ -129,7 +120,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setSales([...sales, newSale]);
 
-    // Update product quantities
     const updatedProducts = [...products];
     saleData.products.forEach((item) => {
       const productIndex = updatedProducts.findIndex((p) => p.id === item.productId);
@@ -142,7 +132,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           updatedAt: new Date(),
         };
 
-        // Create low stock notification if needed
         if (newQuantity <= product.threshold && newQuantity > 0) {
           const notification: Notification = {
             id: generateId(),
@@ -170,7 +159,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProducts(updatedProducts);
   };
 
-  // Notification management methods
   const markNotificationAsRead = (id: string) => {
     setNotifications(
       notifications.map((notification) =>
@@ -183,17 +171,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications([]);
   };
 
-  // Authentication methods
   const login = async (email: string, password: string): Promise<boolean> => {
-    // In a real app, this would call an API
-    // For demo, we'll check against mock data
     const user = mockData.users.find(
       (u) => u.email === email && password === 'password'
     );
     
     if (user) {
       setCurrentUser(user);
-      localStorage.setItem('erp_currentUser', JSON.stringify(user));
       return true;
     }
     
@@ -203,6 +187,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('erp_currentUser');
+  };
+
+  const updateUser = async (user: User): Promise<void> => {
+    if (currentUser && user.id === currentUser.id) {
+      setCurrentUser(user);
+    }
   };
 
   return (
@@ -220,6 +210,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clearNotifications,
         login,
         logout,
+        updateUser,
       }}
     >
       {children}
