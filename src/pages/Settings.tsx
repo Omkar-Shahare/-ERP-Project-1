@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Settings as SettingsIcon, Bell, Store } from 'lucide-react';
 import Button from '../components/ui/Button';
@@ -10,6 +10,7 @@ const Settings: React.FC = () => {
   const [avatar, setAvatar] = useState(currentUser?.avatar || '');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +34,17 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatar(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div>
       <div className="mb-6">
@@ -50,17 +62,24 @@ const Settings: React.FC = () => {
                 <img
                   src={avatar || 'https://i.pravatar.cc/150?img=1'}
                   alt={name}
-                  className="h-20 w-20 rounded-full"
+                  className="h-20 w-20 rounded-full object-cover"
                 />
                 <div className="ml-6">
                   <input
-                    type="text"
-                    value={avatar}
-                    onChange={(e) => setAvatar(e.target.value)}
-                    placeholder="Enter avatar URL"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm mb-2"
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    className="hidden"
                   />
-                  <p className="text-sm text-gray-500">Enter a URL for your profile picture</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    type="button"
+                  >
+                    Change Photo
+                  </Button>
                 </div>
               </div>
 
